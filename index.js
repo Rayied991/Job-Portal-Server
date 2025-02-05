@@ -114,14 +114,34 @@ async function run() {
 
 
     app.get("/jobs", logger , async (req, res) => {
-      console.log("Now inside the api callback");
+     
       const email = req.query.email;
+      const sort=req.query?.sort;
+      const search=req.query?.search;
+      const min=req.query?.min;
+      const max=req.query?.max;
       let query = {};
+      let sortQuery={};
+
       if (email) {
         query = { hr_email: email };
       }
-      const cursor = await jobsCollection.find(query);
-      const result = await cursor.toArray();
+      if(sort === "true"){
+        sortQuery={"salaryRange.min": -1}; //highest salary age dibe
+      }
+      if(search){
+        query.location={$regex:search,$options:"i"};//options make case-insensitive
+      }
+      if(min && max){
+        query={
+          ...query,
+          "salaryRange.min":{$gte:parseInt(min)},
+          "salaryRange.max":{$lte:parseInt(max)}
+        }
+      }
+     
+      const cursor = await jobsCollection.find(query).sort(sortQuery);
+      const result = await cursor.toArray(sort);
       res.send(result);
     });
     app.get("/jobs/:id", async (req, res) => {
